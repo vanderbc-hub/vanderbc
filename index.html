@@ -744,11 +744,19 @@
             try {
                 const { data, error } = await supabase
                     .from('historico_lancamentos')
-                    .insert([dadosMovimentacao])
+                    .insert([{
+                        data: dadosMovimentacao.data,
+                        tipo: dadosMovimentacao.tipo,
+                        codigo: dadosMovimentacao.codigo,
+                        descricao: dadosMovimentacao.descricao,
+                        quantidade: dadosMovimentacao.quantidade,
+                        responsavel: dadosMovimentacao.responsavel,
+                        finalidade: dadosMovimentacao.finalidade
+                    }])
                     .select();
                 
                 if (error) throw error;
-                return true;
+                return data;
             } catch (error) {
                 console.error('❌ Erro ao salvar movimentação no Supabase:', error);
                 throw error;
@@ -960,23 +968,39 @@
             }
         }
 
-        // Salvar no histórico
+        // ========== FUNÇÃO CORRIGIDA - SALVAR NO HISTÓRICO ==========
         async function salvarNoHistorico(dados) {
             try {
-                const novoLancamento = {
-                    ...dados,
-                    id: usandoSupabase ? undefined : Date.now().toString(),
-                    created_at: new Date().toISOString()
-                };
+                console.log('💾 Salvando no histórico:', dados);
                 
                 if (usandoSupabase) {
-                    await salvarMovimentacaoSupabase(novoLancamento);
+                    // Para Supabase, não enviamos ID (é auto-increment)
+                    const resultado = await salvarMovimentacaoSupabase(dados);
+                    
+                    if (resultado) {
+                        console.log('✅ Lançamento salvo no Supabase:', resultado);
+                        
+                        // ATUALIZAÇÃO IMPORTANTE: Recarrega o histórico completo do Supabase
+                        historicoLancamentos = await carregarHistoricoSupabase();
+                        console.log('🔄 Histórico recarregado do Supabase:', historicoLancamentos.length, 'registros');
+                    }
+                    
                 } else {
+                    // Para localStorage
+                    const novoLancamento = {
+                        ...dados,
+                        id: Date.now().toString(),
+                        created_at: new Date().toISOString()
+                    };
+                    
                     historicoLancamentos.unshift(novoLancamento);
                     salvarNoLocalStorage(STORAGE_KEYS.HISTORICO, historicoLancamentos);
+                    console.log('✅ Lançamento salvo no localStorage');
                 }
                 
-                console.log('✅ Lançamento salvo no histórico');
+                // ATUALIZA A INTERFACE IMEDIATAMENTE
+                atualizarTabelaHistorico();
+                
                 return true;
             } catch (error) {
                 console.error('❌ Erro ao salvar no histórico:', error);
