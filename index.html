@@ -897,33 +897,63 @@
             return false;
         }
 
-        // Atualizar saldo da placa
+        // ========== FUNÇÃO CORRIGIDA - ATUALIZAR SALDO ==========
         async function atualizarSaldoPlaca(placaId, tipo, quantidade) {
             try {
-                const placaIndex = placas.findIndex(p => p.id === placaId);
+                console.log('🔍 [DEBUG] Buscando placa com ID:', placaId, 'Tipo:', typeof placaId);
                 
-                if (placaIndex !== -1) {
-                    let novaQuantidade = parseInt(placas[placaIndex].quantidade);
-                    
-                    if (tipo === 'entrada') {
-                        novaQuantidade += parseInt(quantidade);
-                    } else if (tipo === 'saida') {
-                        novaQuantidade -= parseInt(quantidade);
-                        if (novaQuantidade < 0) novaQuantidade = 0;
-                    }
-                    
-                    placas[placaIndex].quantidade = novaQuantidade;
-                    
-                    if (usandoSupabase) {
-                        await atualizarSaldoPlacaSupabase(placaId, novaQuantidade);
-                    } else {
-                        salvarNoLocalStorage(STORAGE_KEYS.PLACAS, placas);
-                    }
-                    
-                    console.log(`✅ Saldo atualizado: ${placas[placaIndex].codigo} → ${novaQuantidade}`);
-                    return true;
+                // Converte o ID para o tipo correto (Supabase usa números, localStorage usa strings)
+                let idParaBuscar;
+                
+                if (usandoSupabase) {
+                    // No Supabase, IDs são números - converte para número
+                    idParaBuscar = Number(placaId);
+                } else {
+                    // No localStorage, IDs são strings - mantém como string
+                    idParaBuscar = placaId;
                 }
-                return false;
+                
+                console.log('🔄 [DEBUG] ID convertido:', idParaBuscar, 'Tipo:', typeof idParaBuscar);
+                
+                // Busca a placa com diferentes estratégias
+                const placaIndex = placas.findIndex(p => {
+                    // Comparação flexível para lidar com tipos diferentes
+                    return p.id == idParaBuscar || 
+                           String(p.id) === String(placaId) ||
+                           p.id === placaId;
+                });
+                
+                console.log('📋 [DEBUG] Índice encontrado:', placaIndex);
+                
+                if (placaIndex === -1) {
+                    console.log('❌ [DEBUG] Placa NÃO encontrada!');
+                    console.log('📊 [DEBUG] IDs disponíveis:', placas.map(p => ({
+                        id: p.id, 
+                        tipo: typeof p.id,
+                        codigo: p.codigo
+                    })));
+                    return false;
+                }
+                
+                let novaQuantidade = parseInt(placas[placaIndex].quantidade);
+                
+                if (tipo === 'entrada') {
+                    novaQuantidade += parseInt(quantidade);
+                } else if (tipo === 'saida') {
+                    novaQuantidade -= parseInt(quantidade);
+                    if (novaQuantidade < 0) novaQuantidade = 0;
+                }
+                
+                placas[placaIndex].quantidade = novaQuantidade;
+                
+                if (usandoSupabase) {
+                    await atualizarSaldoPlacaSupabase(placas[placaIndex].id, novaQuantidade);
+                } else {
+                    salvarNoLocalStorage(STORAGE_KEYS.PLACAS, placas);
+                }
+                
+                console.log(`✅ Saldo atualizado: ${placas[placaIndex].codigo} → ${novaQuantidade}`);
+                return true;
             } catch (error) {
                 console.error('❌ Erro ao atualizar saldo:', error);
                 return false;
@@ -1139,7 +1169,7 @@
                 return;
             }
             
-            const placa = placas.find(p => p.id === placaId);
+            const placa = placas.find(p => p.id == placaId);
             if (!placa) {
                 mostrarMensagem('❌ Placa não encontrada!', 'danger');
                 return;
