@@ -24,8 +24,6 @@
             --text-light: #f8f9fa;
             --text-muted: #adb5bd;
             --laranja-laboratorio: #ffa500;
-            --roxo-titulo: #8a2be2;
-            --azul-dashboard: #1e90ff;
         }
         
         body {
@@ -40,19 +38,26 @@
         }
         
         .navbar-brand, .nav-link {
-            color: var(--primary-color) !important;
+            color: var(--text-light) !important; /* Alterado para branco */
+            transition: all 0.3s ease; /* Adicionada transição */
+        }
+        
+        .navbar-brand {
+            font-weight: bold;
+            font-size: 1.2rem;
         }
         
         .nav-link {
             position: relative;
-            transition: all 0.3s ease;
-            padding: 8px 16px !important;
+            padding: 0.5rem 1rem;
+            margin: 0 0.2rem;
             border-radius: 5px;
+            transition: all 0.3s ease;
         }
         
         .nav-link:hover {
             color: var(--primary-color) !important;
-            background-color: rgba(0, 255, 136, 0.15);
+            background-color: rgba(0, 255, 136, 0.1);
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(0, 255, 136, 0.2);
         }
@@ -78,6 +83,12 @@
             color: var(--primary-color) !important;
             background-color: rgba(0, 255, 136, 0.1);
             border-radius: 5px;
+            transform: translateY(-1px);
+        }
+        
+        .nav-link.active::after {
+            width: 80%;
+            background-color: var(--primary-color);
         }
         
         .status-online {
@@ -92,12 +103,6 @@
             background-color: var(--bg-card);
             border: 1px solid #333;
             color: var(--text-light);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
         }
         
         .card-header {
@@ -114,23 +119,6 @@
             background-color: #000;
             color: var(--primary-color);
             border-color: #333;
-            cursor: pointer;
-            user-select: none;
-            transition: background-color 0.3s ease;
-        }
-        
-        .table th:hover {
-            background-color: rgba(0, 255, 136, 0.1);
-        }
-        
-        .table th.sorted-asc::after {
-            content: " ↑";
-            color: var(--primary-color);
-        }
-        
-        .table th.sorted-desc::after {
-            content: " ↓";
-            color: var(--primary-color);
         }
         
         .table td {
@@ -258,9 +246,7 @@
         
         .page-title {
             margin: 0;
-            color: var(--azul-dashboard);
-            font-weight: bold;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            color: var(--primary-color);
         }
         
         .lab-subtitle {
@@ -303,131 +289,20 @@
         .modal-backdrop.show {
             opacity: 0.8 !important;
         }
-
-        /* Novos estilos para visualização de senha */
-        .password-input-group {
-            position: relative;
-        }
         
-        .password-toggle {
-            position: absolute;
-            right: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            cursor: pointer;
-            transition: color 0.3s ease;
-        }
-        
-        .password-toggle:hover {
-            color: var(--primary-color);
-        }
-        
-        .capslock-warning {
-            color: #ffc107;
-            font-size: 0.875rem;
-            margin-top: 0.25rem;
-            display: none;
-        }
-        
-        /* Estilo para o título principal roxo */
-        .titulo-principal {
-            color: var(--roxo-titulo) !important;
-            font-weight: bold;
-            text-shadow: 0 2px 4px rgba(138, 43, 226, 0.3);
-        }
-        
-        /* Estilo para filtros e ordenação */
-        .filtros-container {
-            background-color: #1a1a1a;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            border: 1px solid #333;
-        }
-        
-        .filtro-item {
-            margin-bottom: 10px;
-        }
-        
-        .stats-card {
-            background: linear-gradient(135deg, #1e1e1e 0%, #2d2d2d 100%);
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
-            border: 1px solid #333;
+        /* Animação para o botão de logout */
+        .btn-outline-warning {
             transition: all 0.3s ease;
         }
         
-        .stats-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
-        }
-        
-        .stats-value {
-            font-size: 2rem;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        
-        .stats-label {
-            color: var(--text-muted);
-            font-size: 0.9rem;
-        }
-        
-        /* Animações */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .fade-in {
-            animation: fadeIn 0.5s ease forwards;
-        }
-        
-        /* Botões de ação com efeitos */
-        .btn-action {
-            transition: all 0.3s ease;
-            border-radius: 6px;
-        }
-        
-        .btn-action:hover {
+        .btn-outline-warning:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 4px 8px rgba(255, 193, 7, 0.3);
         }
         
-        /* Badges com efeitos */
-        .badge {
-            transition: all 0.3s ease;
-        }
-        
-        .badge:hover {
-            transform: scale(1.05);
-        }
-        
-        /* Barra de pesquisa */
-        .search-box {
-            position: relative;
-        }
-        
-        .search-box .form-control {
-            padding-right: 40px;
-        }
-        
-        .search-icon {
-            position: absolute;
-            right: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-muted);
-        }
-        
-        /* Indicador de ordenação */
-        .sort-indicator {
-            margin-left: 5px;
-            font-size: 0.8em;
+        /* Efeito de brilho no hover para os itens do menu */
+        .nav-link:hover {
+            filter: brightness(1.2);
         }
     </style>
 </head>
@@ -437,21 +312,13 @@
         <div class="modal-dialog modal-sm">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title titulo-principal">Acesso ao Sistema</h5>
+                    <h5 class="modal-title">Acesso ao Sistema</h5>
                 </div>
                 <div class="modal-body">
                     <form id="login-form">
                         <div class="mb-3">
                             <label for="login-senha" class="form-label">Senha de Acesso</label>
-                            <div class="password-input-group">
-                                <input type="password" class="form-control" id="login-senha" required autocomplete="off">
-                                <button type="button" class="password-toggle" id="toggle-senha">
-                                    <i class="bi bi-eye"></i>
-                                </button>
-                            </div>
-                            <div class="capslock-warning" id="capslock-warning">
-                                <i class="bi bi-exclamation-triangle"></i> Caps Lock ativado
-                            </div>
+                            <input type="password" class="form-control" id="login-senha" required autocomplete="off">
                         </div>
                         <div class="mb-3 form-check">
                             <input type="checkbox" class="form-check-input" id="lembrar-senha">
@@ -471,7 +338,7 @@
 
     <nav class="navbar navbar-expand-lg navbar-dark" id="main-navbar" style="display: none;">
         <div class="container">
-            <a class="navbar-brand titulo-principal" href="#">
+            <a class="navbar-brand" href="#">
                 <i class="bi bi-motherboard"></i> Controle de Estoque de Placas
                 <small class="status-online" id="status-conexao">
                     <i class="bi bi-check-circle"></i> Conectando...
@@ -499,7 +366,7 @@
                         <a class="nav-link" href="#" data-section="historico-lancamentos">Histórico de Lançamentos</a>
                     </li>
                     <li class="nav-item">
-                        <button class="btn btn-sm btn-outline-warning ms-2 btn-action" onclick="logout()">
+                        <button class="btn btn-sm btn-outline-warning ms-2" onclick="logout()">
                             <i class="bi bi-box-arrow-right"></i> Sair
                         </button>
                     </li>
@@ -675,35 +542,6 @@
                 <h2 class="page-title">Estoque de Placas Eletrônicas</h2>
                 <h3 class="lab-subtitle">Laboratório de Eletrônica</h3>
             </div>
-            
-            <!-- Filtros e Ordenação -->
-            <div class="filtros-container">
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="search-box">
-                            <input type="text" class="form-control" id="pesquisa-placas" placeholder="Pesquisar placas...">
-                            <i class="bi bi-search search-icon"></i>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <select class="form-select" id="filtro-status">
-                            <option value="">Todos os status</option>
-                            <option value="em_estoque">Em Estoque</option>
-                            <option value="baixo_estoque">Baixo Estoque</option>
-                            <option value="sem_estoque">Sem Estoque</option>
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <select class="form-select" id="ordenacao-placas">
-                            <option value="codigo_asc">Código (A-Z)</option>
-                            <option value="codigo_desc">Código (Z-A)</option>
-                            <option value="quantidade_asc">Quantidade (Menor-Maior)</option>
-                            <option value="quantidade_desc">Quantidade (Maior-Menor)</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-            
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0">Lista de Placas em Estoque</h5>
@@ -721,9 +559,9 @@
                         <table class="table table-hover">
                             <thead>
                                 <tr>
-                                    <th data-sort="codigo">Código <span class="sort-indicator"></span></th>
-                                    <th data-sort="descricao">Descrição <span class="sort-indicator"></span></th>
-                                    <th data-sort="quantidade">Quantidade <span class="sort-indicator"></span></th>
+                                    <th>Código</th>
+                                    <th>Descrição</th>
+                                    <th>Quantidade</th>
                                     <th>Localização</th>
                                     <th>Status</th>
                                     <th>Ações</th>
@@ -905,9 +743,9 @@
     <script>
         // ========== CONFIGURAÇÃO DE SEGURANÇA ==========
         
-        // Configuração do Supabase ATUALIZADA
-        const SUPABASE_URL = 'https://vkpchuujxezrgkvbyqqa.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrcGNodXVqeGV6cmdrdmJ5cXFhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEwNjQzNDMsImV4cCI6MjA3NjY0MDM0M30.aMm2oLHO0iesK4PRqqKvdstSBqWmh84gJGFS67DR1Fw';
+        // Configuração do Supabase
+        const SUPABASE_URL = 'https://gsmbnpocopxqxvgilmbu.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdzbWJucG9jb3B4cXh2Z2lsbWJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEwNDgwNjMsImV4cCI6MjA3NjYyNDA2M30.CSnPADpx3ZFZG2t2AKYad8aXJ7s3xEAYt0hKVNcJMqE';
         
         // Senha de acesso CORRIGIDA
         const SENHA_ACESSO = "lab123@";
@@ -930,9 +768,6 @@
         let usandoSupabase = false;
         let intervaloAtualizacao = null;
         let loginModal = null;
-        let ordenacaoAtual = 'codigo_asc';
-        let filtroStatusAtual = '';
-        let termoPesquisaAtual = '';
 
         // Mapeamento de finalidades para nomes amigáveis
         const FINALIDADES = {
@@ -1016,41 +851,9 @@
             location.reload();
         }
 
-        // ========== FUNÇÕES DE VISUALIZAÇÃO DE SENHA E CAPS LOCK ==========
-
-        // Função para alternar visualização da senha
-        function toggleVisualizacaoSenha() {
-            const senhaInput = document.getElementById('login-senha');
-            const toggleIcon = document.getElementById('toggle-senha').querySelector('i');
-            
-            if (senhaInput.type === 'password') {
-                senhaInput.type = 'text';
-                toggleIcon.className = 'bi bi-eye-slash';
-            } else {
-                senhaInput.type = 'password';
-                toggleIcon.className = 'bi bi-eye';
-            }
-        }
-
-        // Função para verificar Caps Lock
-        function verificarCapsLock(event) {
-            const capsWarning = document.getElementById('capslock-warning');
-            
-            if (event.getModifierState && event.getModifierState('CapsLock')) {
-                capsWarning.style.display = 'block';
-            } else {
-                capsWarning.style.display = 'none';
-            }
-        }
-
         // ========== INICIALIZAÇÃO CORRIGIDA ==========
 
         document.addEventListener('DOMContentLoaded', function() {
-            // Configurar eventos de visualização de senha e Caps Lock
-            document.getElementById('toggle-senha').addEventListener('click', toggleVisualizacaoSenha);
-            document.getElementById('login-senha').addEventListener('keyup', verificarCapsLock);
-            document.getElementById('login-senha').addEventListener('keypress', verificarCapsLock);
-            
             // Verificar autenticação
             if (verificarAutenticacao()) {
                 mostrarSistema();
@@ -1088,30 +891,6 @@
             document.getElementById('form-placa').addEventListener('submit', salvarPlaca);
             document.getElementById('form-movimentacao').addEventListener('submit', registrarMovimentacao);
             
-            // Event listeners para filtros e ordenação
-            document.getElementById('ordenacao-placas').addEventListener('change', function() {
-                ordenacaoAtual = this.value;
-                atualizarTabelaEstoque();
-            });
-            
-            document.getElementById('filtro-status').addEventListener('change', function() {
-                filtroStatusAtual = this.value;
-                atualizarTabelaEstoque();
-            });
-            
-            document.getElementById('pesquisa-placas').addEventListener('input', function() {
-                termoPesquisaAtual = this.value.toLowerCase();
-                atualizarTabelaEstoque();
-            });
-            
-            // Event listeners para ordenação por clique no cabeçalho
-            document.querySelectorAll('#tabela-estoque thead th[data-sort]').forEach(th => {
-                th.addEventListener('click', function() {
-                    const campo = this.getAttribute('data-sort');
-                    alternarOrdenacao(campo);
-                });
-            });
-            
             // Navegação entre seções
             document.querySelectorAll('.nav-link[data-section]').forEach(link => {
                 link.addEventListener('click', function(e) {
@@ -1137,66 +916,6 @@
             carregarDados().then(() => {
                 configurarAtualizacoesTempoReal();
             });
-        }
-
-        // Função para alternar ordenação
-        function alternarOrdenacao(campo) {
-            const ordenacaoSelect = document.getElementById('ordenacao-placas');
-            
-            if (ordenacaoAtual === `${campo}_asc`) {
-                ordenacaoAtual = `${campo}_desc`;
-            } else {
-                ordenacaoAtual = `${campo}_asc`;
-            }
-            
-            // Atualizar o select para refletir a ordenação atual
-            ordenacaoSelect.value = ordenacaoAtual;
-            
-            atualizarTabelaEstoque();
-        }
-
-        // Função para aplicar filtros e ordenação
-        function aplicarFiltrosEOrdenacao() {
-            let placasFiltradas = [...placas];
-            
-            // Aplicar filtro de pesquisa
-            if (termoPesquisaAtual) {
-                placasFiltradas = placasFiltradas.filter(placa => 
-                    placa.codigo.toLowerCase().includes(termoPesquisaAtual) ||
-                    placa.descricao.toLowerCase().includes(termoPesquisaAtual) ||
-                    (placa.localizacao && placa.localizacao.toLowerCase().includes(termoPesquisaAtual))
-                );
-            }
-            
-            // Aplicar filtro de status
-            if (filtroStatusAtual) {
-                placasFiltradas = placasFiltradas.filter(placa => {
-                    if (filtroStatusAtual === 'em_estoque') {
-                        return placa.quantidade > LIMITE_ESTOQUE_BAIXO;
-                    } else if (filtroStatusAtual === 'baixo_estoque') {
-                        return placa.quantidade > 0 && placa.quantidade <= LIMITE_ESTOQUE_BAIXO;
-                    } else if (filtroStatusAtual === 'sem_estoque') {
-                        return placa.quantidade === 0;
-                    }
-                    return true;
-                });
-            }
-            
-            // Aplicar ordenação
-            placasFiltradas.sort((a, b) => {
-                const [campo, direcao] = ordenacaoAtual.split('_');
-                const multiplicador = direcao === 'asc' ? 1 : -1;
-                
-                if (campo === 'codigo' || campo === 'descricao') {
-                    return multiplicador * a[campo].localeCompare(b[campo]);
-                } else if (campo === 'quantidade') {
-                    return multiplicador * (a.quantidade - b.quantidade);
-                }
-                
-                return 0;
-            });
-            
-            return placasFiltradas;
         }
 
         // Função para mostrar mensagens
@@ -1476,39 +1195,18 @@
         // Atualizar tabela de estoque
         function atualizarTabelaEstoque() {
             const tbody = document.getElementById('tabela-estoque');
-            const placasFiltradas = aplicarFiltrosEOrdenacao();
             
-            // Atualizar indicadores de ordenação
-            document.querySelectorAll('#tabela-estoque thead th[data-sort]').forEach(th => {
-                const campo = th.getAttribute('data-sort');
-                const indicador = th.querySelector('.sort-indicator');
-                
-                if (ordenacaoAtual.startsWith(campo)) {
-                    th.classList.add('sorted-asc', 'sorted-desc');
-                    if (ordenacaoAtual.endsWith('asc')) {
-                        th.classList.remove('sorted-desc');
-                        indicador.textContent = ' ↑';
-                    } else {
-                        th.classList.remove('sorted-asc');
-                        indicador.textContent = ' ↓';
-                    }
-                } else {
-                    th.classList.remove('sorted-asc', 'sorted-desc');
-                    indicador.textContent = '';
-                }
-            });
-            
-            if (placasFiltradas.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center">Nenhuma placa encontrada</td></tr>';
+            if (placas.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center">Nenhuma placa cadastrada</td></tr>';
                 return;
             }
             
-            tbody.innerHTML = placasFiltradas.map(placa => {
+            tbody.innerHTML = placas.map(placa => {
                 const classeEstoque = placa.quantidade === 0 ? 'out-of-stock' : 
                                     placa.quantidade <= LIMITE_ESTOQUE_BAIXO ? 'low-stock' : '';
                 
                 return `
-                    <tr class="${classeEstoque} fade-in">
+                    <tr class="${classeEstoque}">
                         <td>${placa.codigo}</td>
                         <td>${placa.descricao}</td>
                         <td>${placa.quantidade}</td>
@@ -1521,10 +1219,10 @@
                                 '<span class="badge bg-success">Em Estoque</span>'}
                         </td>
                         <td class="action-buttons">
-                            <button class="btn btn-sm btn-outline-primary btn-action" onclick="editarPlaca('${placa.id}')">
+                            <button class="btn btn-sm btn-outline-primary" onclick="editarPlaca('${placa.id}')">
                                 <i class="bi bi-pencil"></i>
                             </button>
-                            <button class="btn btn-sm btn-outline-danger btn-action" onclick="excluirPlaca('${placa.id}')">
+                            <button class="btn btn-sm btn-outline-danger" onclick="excluirPlaca('${placa.id}')">
                                 <i class="bi bi-trash"></i>
                             </button>
                         </td>
@@ -1682,7 +1380,7 @@
                 const finalidadeTexto = FINALIDADES[lancamento.finalidade] || lancamento.finalidade;
                 
                 return `
-                    <tr class="fade-in">
+                    <tr>
                         <td>${lancamento.data}</td>
                         <td>${tipoBadge}</td>
                         <td>${lancamento.codigo} - ${lancamento.descricao}</td>
@@ -1690,10 +1388,10 @@
                         <td>${lancamento.responsavel}</td>
                         <td>${finalidadeTexto}</td>
                         <td class="action-buttons">
-                            <button class="btn btn-sm btn-outline-primary btn-action" onclick="editarLancamento('${lancamento.id}')">
+                            <button class="btn btn-sm btn-outline-primary" onclick="editarLancamento('${lancamento.id}')">
                                 <i class="bi bi-pencil"></i>
                             </button>
-                            <button class="btn btn-sm btn-outline-danger btn-action" onclick="excluirLancamento('${lancamento.id}')">
+                            <button class="btn btn-sm btn-outline-danger" onclick="excluirLancamento('${lancamento.id}')">
                                 <i class="bi bi-trash"></i>
                             </button>
                         </td>
