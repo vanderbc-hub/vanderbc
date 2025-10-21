@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Controle de Placas Eletrônicas - Supabase</title>
+    <title>Controle de Estoque de Placas Eletrônicas</title>
     
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -11,6 +11,9 @@
     
     <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- SheetJS para exportação Excel -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     
     <style>
         :root {
@@ -20,6 +23,7 @@
             --bg-card: #1e1e1e;
             --text-light: #f8f9fa;
             --text-muted: #adb5bd;
+            --laranja-laboratorio: #ffa500;
         }
         
         body {
@@ -189,13 +193,128 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        
+        /* Novos estilos para o título e subtítulo */
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .page-title {
+            margin: 0;
+            color: var(--primary-color);
+        }
+        
+        .lab-subtitle {
+            color: var(--laranja-laboratorio);
+            font-size: 1.2rem;
+            font-weight: normal;
+            margin: 0;
+        }
+        
+        /* Estilos para o modal de login */
+        #login-modal .modal-content {
+            background-color: var(--bg-card);
+            color: var(--text-light);
+        }
+        
+        #login-modal .modal-header {
+            border-bottom: 1px solid #333;
+        }
+        
+        #login-modal .modal-footer {
+            border-top: 1px solid #333;
+        }
+        
+        .btn-export {
+            background-color: #28a745;
+            border-color: #28a745;
+            color: white;
+        }
+        
+        .btn-export:hover {
+            background-color: #218838;
+            border-color: #1e7e34;
+            color: white;
+        }
+        
+        /* Estilo para quando o modal está aberto */
+        .modal-backdrop.show {
+            opacity: 0.8 !important;
+        }
+
+        /* Novos estilos para visualização de senha */
+        .password-input-group {
+            position: relative;
+        }
+        
+        .password-toggle {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+        
+        .password-toggle:hover {
+            color: var(--primary-color);
+        }
+        
+        .capslock-warning {
+            color: #ffc107;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+            display: none;
+        }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark">
+    <!-- Modal de Login -->
+    <div class="modal fade" id="login-modal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Acesso ao Sistema</h5>
+                </div>
+                <div class="modal-body">
+                    <form id="login-form">
+                        <div class="mb-3">
+                            <label for="login-senha" class="form-label">Senha de Acesso</label>
+                            <div class="password-input-group">
+                                <input type="password" class="form-control" id="login-senha" required autocomplete="off">
+                                <button type="button" class="password-toggle" id="toggle-senha">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                            <div class="capslock-warning" id="capslock-warning">
+                                <i class="bi bi-exclamation-triangle"></i> Caps Lock ativado
+                            </div>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="lembrar-senha">
+                            <label class="form-check-label" for="lembrar-senha">Lembrar senha</label>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" onclick="verificarSenha()">
+                        <span id="btn-login-text">Acessar</span>
+                        <span id="btn-login-loading" class="loading-spinner" style="display: none;"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <nav class="navbar navbar-expand-lg navbar-dark" id="main-navbar" style="display: none;">
         <div class="container">
             <a class="navbar-brand" href="#">
-                <i class="bi bi-motherboard"></i> Controle de Placas 
+                <i class="bi bi-motherboard"></i> Controle de Estoque de Placas
                 <small class="status-online" id="status-conexao">
                     <i class="bi bi-check-circle"></i> Conectando...
                 </small>
@@ -220,6 +339,11 @@
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="#" data-section="historico-lancamentos">Histórico de Lançamentos</a>
+                    </li>
+                    <li class="nav-item">
+                        <button class="btn btn-sm btn-outline-warning ms-2" onclick="logout()">
+                            <i class="bi bi-box-arrow-right"></i> Sair
+                        </button>
                     </li>
                 </ul>
             </div>
@@ -284,7 +408,10 @@
 
     <section id="dashboard" class="page-section active-section">
         <div class="container my-5">
-            <h2 class="mb-4">Dashboard de Placas Eletrônicas</h2>
+            <div class="header-container">
+                <h2 class="page-title">Dashboard de Placas Eletrônicas</h2>
+                <h3 class="lab-subtitle">Laboratório de Eletrônica</h3>
+            </div>
             
             <div class="row mb-5">
                 <div class="col-md-3 mb-3">
@@ -386,13 +513,21 @@
 
     <section id="estoque" class="page-section">
         <div class="container my-5">
-            <h2 class="mb-4">Estoque de Placas Eletrônicas</h2>
+            <div class="header-container">
+                <h2 class="page-title">Estoque de Placas Eletrônicas</h2>
+                <h3 class="lab-subtitle">Laboratório de Eletrônica</h3>
+            </div>
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0">Lista de Placas em Estoque</h5>
-                    <button class="btn btn-primary" onclick="abrirCadastroPlaca()">
-                        <i class="bi bi-plus-circle"></i> Nova Placa
-                    </button>
+                    <div>
+                        <button class="btn btn-export me-2" onclick="exportarParaExcel()">
+                            <i class="bi bi-file-earmark-excel"></i> Exportar Excel
+                        </button>
+                        <button class="btn btn-primary" onclick="abrirCadastroPlaca()">
+                            <i class="bi bi-plus-circle"></i> Nova Placa
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -421,7 +556,10 @@
 
     <section id="cadastro-placa" class="page-section">
         <div class="container my-5">
-            <h2 class="mb-4" id="titulo-cadastro-placa">Cadastrar Nova Placa</h2>
+            <div class="header-container">
+                <h2 class="page-title" id="titulo-cadastro-placa">Cadastrar Nova Placa</h2>
+                <h3 class="lab-subtitle">Laboratório de Eletrônica</h3>
+            </div>
             <div class="card">
                 <div class="card-body">
                     <form id="form-placa">
@@ -467,7 +605,10 @@
 
     <section id="movimentar-estoque" class="page-section">
         <div class="container my-5">
-            <h2 class="mb-4">Movimentar Estoque</h2>
+            <div class="header-container">
+                <h2 class="page-title">Movimentar Estoque</h2>
+                <h3 class="lab-subtitle">Laboratório de Eletrônica</h3>
+            </div>
             
             <!-- Formulário de Movimentação -->
             <div class="card">
@@ -535,7 +676,10 @@
 
     <section id="historico-lancamentos" class="page-section">
         <div class="container my-5">
-            <h2 class="mb-4">Histórico de Lançamentos</h2>
+            <div class="header-container">
+                <h2 class="page-title">Histórico de Lançamentos</h2>
+                <h3 class="lab-subtitle">Laboratório de Eletrônica</h3>
+            </div>
             
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
@@ -568,14 +712,21 @@
         </div>
     </section>
 
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
-        // Configuração do Supabase
-        const SUPABASE_URL = 'https://muvntbpilqfovsrtpeid.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11dm50YnBpbHFmb3ZzcnRwZWlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA2OTczMjQsImV4cCI6MjA3NjI3MzMyNH0.k6TDJMp_CY3kz7WfF-USoVr2c599OdnEe6-HG73OV5c';
+        // ========== CONFIGURAÇÃO DE SEGURANÇA ==========
+        
+        // Configuração do Supabase ATUALIZADA
+        const SUPABASE_URL = 'https://vkpchuujxezrgkvbyqqa.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrcGNodXVqeGV6cmdrdmJ5cXFhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEwNjQzNDMsImV4cCI6MjA3NjY0MDM0M30.aMm2oLHO0iesK4PRqqKvdstSBqWmh84gJGFS67DR1Fw';
+        
+        // Senha de acesso CORRIGIDA
+        const SENHA_ACESSO = "lab123@";
+        
+        // Chave para armazenamento da senha
+        const SENHA_STORAGE_KEY = "estoque_placas_senha";
 
         // Inicializar Supabase
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -590,6 +741,8 @@
         let placas = [];
         let historicoLancamentos = [];
         let usandoSupabase = false;
+        let intervaloAtualizacao = null;
+        let loginModal = null;
 
         // Mapeamento de finalidades para nomes amigáveis
         const FINALIDADES = {
@@ -604,6 +757,173 @@
 
         // Limite para estoque baixo
         const LIMITE_ESTOQUE_BAIXO = 10;
+
+        // ========== SISTEMA DE SEGURANÇA CORRIGIDO ==========
+
+        // Função para verificar se o usuário está autenticado
+        function verificarAutenticacao() {
+            const senhaSalva = localStorage.getItem(SENHA_STORAGE_KEY);
+            if (senhaSalva) {
+                try {
+                    return senhaSalva === btoa(SENHA_ACESSO);
+                } catch (e) {
+                    localStorage.removeItem(SENHA_STORAGE_KEY);
+                    return false;
+                }
+            }
+            return false;
+        }
+
+        // Função para verificar senha - CORRIGIDA
+        function verificarSenha() {
+            const senhaInput = document.getElementById('login-senha').value;
+            const lembrarSenha = document.getElementById('lembrar-senha').checked;
+            
+            if (senhaInput === SENHA_ACESSO) {
+                if (lembrarSenha) {
+                    localStorage.setItem(SENHA_STORAGE_KEY, btoa(SENHA_ACESSO));
+                }
+                fecharModalLogin();
+                mostrarSistema();
+            } else {
+                mostrarMensagem('❌ Senha incorreta', 'danger');
+                // Limpar campo de senha
+                document.getElementById('login-senha').value = '';
+                document.getElementById('login-senha').focus();
+            }
+        }
+
+        // Função para fechar o modal de login corretamente - CORRIGIDA
+        function fecharModalLogin() {
+            const modalElement = document.getElementById('login-modal');
+            const modalInstance = bootstrap.Modal.getInstance(modalElement);
+            if (modalInstance) {
+                modalInstance.hide();
+            }
+            
+            // Remover o backdrop do modal manualmente se necessário
+            const backdrops = document.querySelectorAll('.modal-backdrop');
+            backdrops.forEach(backdrop => {
+                backdrop.parentNode.removeChild(backdrop);
+            });
+            
+            // Restaurar o scroll do body
+            document.body.style.overflow = 'auto';
+            document.body.classList.remove('modal-open');
+        }
+
+        // Função para mostrar o sistema após autenticação
+        function mostrarSistema() {
+            document.getElementById('main-navbar').style.display = 'flex';
+            
+            // Inicializar o sistema
+            inicializarSistema();
+        }
+
+        // Função para logout
+        function logout() {
+            localStorage.removeItem(SENHA_STORAGE_KEY);
+            location.reload();
+        }
+
+        // ========== FUNÇÕES DE VISUALIZAÇÃO DE SENHA E CAPS LOCK ==========
+
+        // Função para alternar visualização da senha
+        function toggleVisualizacaoSenha() {
+            const senhaInput = document.getElementById('login-senha');
+            const toggleIcon = document.getElementById('toggle-senha').querySelector('i');
+            
+            if (senhaInput.type === 'password') {
+                senhaInput.type = 'text';
+                toggleIcon.className = 'bi bi-eye-slash';
+            } else {
+                senhaInput.type = 'password';
+                toggleIcon.className = 'bi bi-eye';
+            }
+        }
+
+        // Função para verificar Caps Lock
+        function verificarCapsLock(event) {
+            const capsWarning = document.getElementById('capslock-warning');
+            
+            if (event.getModifierState && event.getModifierState('CapsLock')) {
+                capsWarning.style.display = 'block';
+            } else {
+                capsWarning.style.display = 'none';
+            }
+        }
+
+        // ========== INICIALIZAÇÃO CORRIGIDA ==========
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Configurar eventos de visualização de senha e Caps Lock
+            document.getElementById('toggle-senha').addEventListener('click', toggleVisualizacaoSenha);
+            document.getElementById('login-senha').addEventListener('keyup', verificarCapsLock);
+            document.getElementById('login-senha').addEventListener('keypress', verificarCapsLock);
+            
+            // Verificar autenticação
+            if (verificarAutenticacao()) {
+                mostrarSistema();
+            } else {
+                // Mostrar modal de login
+                const modalElement = document.getElementById('login-modal');
+                loginModal = new bootstrap.Modal(modalElement, {
+                    backdrop: 'static',
+                    keyboard: false
+                });
+                loginModal.show();
+                
+                // Focar no campo de senha
+                modalElement.addEventListener('shown.bs.modal', function() {
+                    document.getElementById('login-senha').focus();
+                });
+            }
+            
+            // Event listener para tecla Enter no login
+            document.getElementById('login-senha').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    verificarSenha();
+                }
+            });
+        });
+
+        // ========== FUNÇÕES RESTANTES ==========
+
+        // Função para inicializar o sistema
+        function inicializarSistema() {
+            // Configurar data atual
+            document.getElementById('data-movimentacao').value = obterDataAtual();
+            
+            // Event listeners
+            document.getElementById('form-placa').addEventListener('submit', salvarPlaca);
+            document.getElementById('form-movimentacao').addEventListener('submit', registrarMovimentacao);
+            
+            // Navegação entre seções
+            document.querySelectorAll('.nav-link[data-section]').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Atualizar navegação
+                    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Mostrar seção correspondente
+                    const sectionId = this.getAttribute('data-section');
+                    document.querySelectorAll('.page-section').forEach(section => {
+                        section.classList.remove('active-section');
+                    });
+                    document.getElementById(sectionId).classList.add('active-section');
+                });
+            });
+            
+            // Event listener para mudança de tipo de gráfico
+            document.getElementById('tipo-grafico').addEventListener('change', atualizarGraficoEstoque);
+            
+            // Carregar dados iniciais
+            carregarDados().then(() => {
+                configurarAtualizacoesTempoReal();
+            });
+        }
 
         // Função para mostrar mensagens
         function mostrarMensagem(mensagem, tipo) {
@@ -732,7 +1052,7 @@
                 }
                 
                 if (error) throw error;
-                return true;
+                return data;
             } catch (error) {
                 console.error('❌ Erro ao salvar placa no Supabase:', error);
                 throw error;
@@ -844,492 +1164,84 @@
             }
         }
 
-        // Salvar placa
-        async function salvarPlaca(placaData) {
-            try {
-                mostrarLoading('btn-placa');
-                
-                if (usandoSupabase) {
-                    await salvarPlacaSupabase(placaData);
-                } else {
-                    // LocalStorage
-                    if (placaData.id) {
-                        const index = placas.findIndex(p => p.id === placaData.id);
-                        if (index !== -1) {
-                            placas[index] = { ...placaData };
-                        }
-                    } else {
-                        const novaPlaca = {
-                            ...placaData,
-                            id: Date.now().toString(),
-                            created_at: new Date().toISOString()
-                        };
-                        placas.push(novaPlaca);
-                    }
-                    salvarNoLocalStorage(STORAGE_KEYS.PLACAS, placas);
-                }
-                
-                esconderLoading('btn-placa');
-                return true;
-            } catch (error) {
-                console.error('❌ Erro ao salvar placa:', error);
-                esconderLoading('btn-placa');
-                mostrarMensagem('❌ Erro ao salvar placa', 'danger');
-                return false;
+        // Configurar atualizações automáticas em tempo real
+        function configurarAtualizacoesTempoReal() {
+            // Limpar intervalo anterior se existir
+            if (intervaloAtualizacao) {
+                clearInterval(intervaloAtualizacao);
             }
-        }
-
-        // Excluir placa completamente
-        async function excluirPlaca(id) {
-            if (confirm('Tem certeza que deseja excluir completamente esta placa? Esta ação removerá todo o saldo e o cadastro permanentemente e não pode ser desfeita.')) {
-                try {
-                    if (usandoSupabase) {
-                        await excluirPlacaSupabase(id);
-                    } else {
-                        const index = placas.findIndex(p => p.id === id);
-                        if (index !== -1) {
-                            placas.splice(index, 1);
-                            salvarNoLocalStorage(STORAGE_KEYS.PLACAS, placas);
-                        }
-                    }
-                    
-                    carregarDados();
-                    mostrarMensagem('✅ Placa excluída permanentemente com sucesso!', 'success');
-                    return true;
-                } catch (error) {
-                    console.error('❌ Erro ao excluir placa:', error);
-                    mostrarMensagem('❌ Erro ao excluir placa', 'danger');
-                    return false;
-                }
-            }
-            return false;
-        }
-
-        // ========== FUNÇÃO CORRIGIDA - ATUALIZAR SALDO ==========
-        async function atualizarSaldoPlaca(placaId, tipo, quantidade) {
-            try {
-                console.log('🔍 [DEBUG] Buscando placa com ID:', placaId, 'Tipo:', typeof placaId);
-                
-                // Converte o ID para o tipo correto (Supabase usa números, localStorage usa strings)
-                let idParaBuscar;
-                
-                if (usandoSupabase) {
-                    // No Supabase, IDs são números - converte para número
-                    idParaBuscar = Number(placaId);
-                } else {
-                    // No localStorage, IDs são strings - mantém como string
-                    idParaBuscar = placaId;
-                }
-                
-                console.log('🔄 [DEBUG] ID convertido:', idParaBuscar, 'Tipo:', typeof idParaBuscar);
-                
-                // Busca a placa com diferentes estratégias
-                const placaIndex = placas.findIndex(p => {
-                    // Comparação flexível para lidar com tipos diferentes
-                    return p.id == idParaBuscar || 
-                           String(p.id) === String(placaId) ||
-                           p.id === placaId;
-                });
-                
-                console.log('📋 [DEBUG] Índice encontrado:', placaIndex);
-                
-                if (placaIndex === -1) {
-                    console.log('❌ [DEBUG] Placa NÃO encontrada!');
-                    console.log('📊 [DEBUG] IDs disponíveis:', placas.map(p => ({
-                        id: p.id, 
-                        tipo: typeof p.id,
-                        codigo: p.codigo
-                    })));
-                    return false;
-                }
-                
-                let novaQuantidade = parseInt(placas[placaIndex].quantidade);
-                
-                if (tipo === 'entrada') {
-                    novaQuantidade += parseInt(quantidade);
-                } else if (tipo === 'saida') {
-                    novaQuantidade -= parseInt(quantidade);
-                    if (novaQuantidade < 0) novaQuantidade = 0;
-                }
-                
-                placas[placaIndex].quantidade = novaQuantidade;
-                
-                if (usandoSupabase) {
-                    await atualizarSaldoPlacaSupabase(placas[placaIndex].id, novaQuantidade);
-                } else {
-                    salvarNoLocalStorage(STORAGE_KEYS.PLACAS, placas);
-                }
-                
-                console.log(`✅ Saldo atualizado: ${placas[placaIndex].codigo} → ${novaQuantidade}`);
-                return true;
-            } catch (error) {
-                console.error('❌ Erro ao atualizar saldo:', error);
-                return false;
-            }
-        }
-
-        // ========== FUNÇÃO CORRIGIDA - SALVAR NO HISTÓRICO ==========
-        async function salvarNoHistorico(dados) {
-            try {
-                console.log('💾 Salvando no histórico:', dados);
-                
-                if (usandoSupabase) {
-                    // Para Supabase, não enviamos ID (é auto-increment)
-                    const resultado = await salvarMovimentacaoSupabase(dados);
-                    
-                    if (resultado) {
-                        console.log('✅ Lançamento salvo no Supabase:', resultado);
+            
+            // Atualizar a cada 5 segundos quando conectado ao Supabase
+            if (usandoSupabase) {
+                intervaloAtualizacao = setInterval(async () => {
+                    try {
+                        const novasPlacas = await carregarPlacasSupabase();
+                        const novoHistorico = await carregarHistoricoSupabase();
                         
-                        // ATUALIZAÇÃO IMPORTANTE: Recarrega o histórico completo do Supabase
-                        historicoLancamentos = await carregarHistoricoSupabase();
-                        console.log('🔄 Histórico recarregado do Supabase:', historicoLancamentos.length, 'registros');
+                        // Verificar se houve mudanças
+                        if (JSON.stringify(novasPlacas) !== JSON.stringify(placas) || 
+                            JSON.stringify(novoHistorico) !== JSON.stringify(historicoLancamentos)) {
+                            
+                            placas = novasPlacas;
+                            historicoLancamentos = novoHistorico;
+                            
+                            atualizarTabelaEstoque();
+                            atualizarDashboard();
+                            atualizarSelectPlacas();
+                            atualizarTabelaHistorico();
+                            
+                            console.log('🔄 Dados atualizados automaticamente');
+                        }
+                    } catch (error) {
+                        console.warn('❌ Erro na atualização automática:', error);
                     }
-                    
-                } else {
-                    // Para localStorage
-                    const novoLancamento = {
-                        ...dados,
-                        id: Date.now().toString(),
-                        created_at: new Date().toISOString()
-                    };
-                    
-                    historicoLancamentos.unshift(novoLancamento);
-                    salvarNoLocalStorage(STORAGE_KEYS.HISTORICO, historicoLancamentos);
-                    console.log('✅ Lançamento salvo no localStorage');
-                }
-                
-                // ATUALIZA A INTERFACE IMEDIATAMENTE
-                atualizarTabelaHistorico();
-                
-                return true;
-            } catch (error) {
-                console.error('❌ Erro ao salvar no histórico:', error);
-                return false;
+                }, 5000);
             }
         }
 
-        // Atualizar tabela do histórico
-        function atualizarTabelaHistorico() {
-            const tabela = document.getElementById('tabela-historico-completo');
-            const totalRegistros = document.getElementById('total-registros-historico');
+        // Atualizar tabela de estoque
+        function atualizarTabelaEstoque() {
+            const tbody = document.getElementById('tabela-estoque');
             
-            totalRegistros.textContent = `${historicoLancamentos.length} registros`;
-            
-            if (historicoLancamentos.length === 0) {
-                tabela.innerHTML = '<tr><td colspan="7" class="text-center">Nenhum lançamento registrado</td></tr>';
+            if (placas.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center">Nenhuma placa cadastrada</td></tr>';
                 return;
             }
             
-            let html = '';
-            historicoLancamentos.forEach(lancamento => {
-                const tipoBadge = lancamento.tipo === 'entrada' ? 
-                    '<span class="badge entrada-badge">Entrada</span>' : 
-                    '<span class="badge saida-badge">Saída</span>';
+            tbody.innerHTML = placas.map(placa => {
+                const classeEstoque = placa.quantidade === 0 ? 'out-of-stock' : 
+                                    placa.quantidade <= LIMITE_ESTOQUE_BAIXO ? 'low-stock' : '';
                 
-                const dataFormatada = new Date(lancamento.data).toLocaleDateString('pt-BR');
-                const finalidadeTexto = FINALIDADES[lancamento.finalidade] || lancamento.finalidade;
-                
-                html += `
-                    <tr>
-                        <td>${dataFormatada}</td>
-                        <td>${tipoBadge}</td>
-                        <td><strong>${lancamento.codigo}</strong> - ${lancamento.descricao}</td>
-                        <td>${lancamento.quantidade}</td>
-                        <td>${lancamento.responsavel}</td>
-                        <td>${finalidadeTexto}</td>
+                return `
+                    <tr class="${classeEstoque}">
+                        <td>${placa.codigo}</td>
+                        <td>${placa.descricao}</td>
+                        <td>${placa.quantidade}</td>
+                        <td>${placa.localizacao || '-'}</td>
+                        <td>
+                            ${placa.quantidade === 0 ? 
+                                '<span class="badge bg-danger">Sem Estoque</span>' : 
+                                placa.quantidade <= LIMITE_ESTOQUE_BAIXO ? 
+                                '<span class="badge bg-warning">Baixo Estoque</span>' : 
+                                '<span class="badge bg-success">Em Estoque</span>'}
+                        </td>
                         <td class="action-buttons">
-                            <button class="btn btn-sm btn-outline-primary me-1" onclick="editarLancamento('${lancamento.id}')">
+                            <button class="btn btn-sm btn-outline-primary" onclick="editarPlaca('${placa.id}')">
                                 <i class="bi bi-pencil"></i>
                             </button>
-                            <button class="btn btn-sm btn-outline-danger" onclick="excluirLancamento('${lancamento.id}')">
+                            <button class="btn btn-sm btn-outline-danger" onclick="excluirPlaca('${placa.id}')">
                                 <i class="bi bi-trash"></i>
                             </button>
                         </td>
                     </tr>
                 `;
-            });
-            
-            tabela.innerHTML = html;
-        }
-
-        // Editar lançamento
-        function editarLancamento(id) {
-            const lancamento = historicoLancamentos.find(l => l.id === id);
-            if (lancamento) {
-                document.getElementById('editar-lancamento-id').value = lancamento.id;
-                document.getElementById('editar-quantidade').value = lancamento.quantidade;
-                document.getElementById('editar-responsavel').value = lancamento.responsavel;
-                document.getElementById('editar-finalidade').value = lancamento.finalidade;
-                document.getElementById('editar-data').value = lancamento.data;
-                
-                const modal = new bootstrap.Modal(document.getElementById('modalEditarLancamento'));
-                modal.show();
-            }
-        }
-
-        // Salvar edição do lançamento
-        async function salvarEdicaoLancamento() {
-            const id = document.getElementById('editar-lancamento-id').value;
-            const novaQuantidade = parseInt(document.getElementById('editar-quantidade').value);
-            const novoResponsavel = document.getElementById('editar-responsavel').value;
-            const novaFinalidade = document.getElementById('editar-finalidade').value;
-            const novaData = document.getElementById('editar-data').value;
-            
-            if (!novaQuantidade || novaQuantidade <= 0) {
-                mostrarMensagem('❌ Quantidade deve ser maior que zero!', 'danger');
-                return;
-            }
-            
-            if (!novoResponsavel) {
-                mostrarMensagem('❌ Responsável é obrigatório!', 'danger');
-                return;
-            }
-            
-            if (!novaFinalidade) {
-                mostrarMensagem('❌ Finalidade é obrigatória!', 'danger');
-                return;
-            }
-            
-            if (!novaData) {
-                mostrarMensagem('❌ Data é obrigatória!', 'danger');
-                return;
-            }
-            
-            try {
-                mostrarLoading('btn-salvar');
-                
-                const index = historicoLancamentos.findIndex(l => l.id === id);
-                if (index !== -1) {
-                    // Atualiza apenas os dados do histórico, sem alterar o saldo
-                    historicoLancamentos[index].quantidade = novaQuantidade;
-                    historicoLancamentos[index].responsavel = novoResponsavel;
-                    historicoLancamentos[index].finalidade = novaFinalidade;
-                    historicoLancamentos[index].data = novaData;
-                    
-                    if (usandoSupabase) {
-                        // Atualizar no Supabase
-                        const { error } = await supabase
-                            .from('historico_lancamentos')
-                            .update({
-                                quantidade: novaQuantidade,
-                                responsavel: novoResponsavel,
-                                finalidade: novaFinalidade,
-                                data: novaData
-                            })
-                            .eq('id', id);
-                        
-                        if (error) throw error;
-                    } else {
-                        salvarNoLocalStorage(STORAGE_KEYS.HISTORICO, historicoLancamentos);
-                    }
-                    
-                    atualizarTabelaHistorico();
-                    
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('modalEditarLancamento'));
-                    modal.hide();
-                    
-                    mostrarMensagem('✅ Lançamento atualizado com sucesso!', 'success');
-                }
-            } catch (error) {
-                console.error('❌ Erro ao atualizar lançamento:', error);
-                mostrarMensagem('❌ Erro ao atualizar lançamento', 'danger');
-            } finally {
-                esconderLoading('btn-salvar');
-            }
-        }
-
-        // Excluir lançamento
-        async function excluirLancamento(id) {
-            if (confirm('Tem certeza que deseja excluir este lançamento? Esta ação não pode ser desfeita.')) {
-                try {
-                    if (usandoSupabase) {
-                        await excluirLancamentoSupabase(id);
-                    } else {
-                        const index = historicoLancamentos.findIndex(l => l.id === id);
-                        if (index !== -1) {
-                            historicoLancamentos.splice(index, 1);
-                            salvarNoLocalStorage(STORAGE_KEYS.HISTORICO, historicoLancamentos);
-                        }
-                    }
-                    
-                    carregarDados();
-                    mostrarMensagem('✅ Lançamento excluído com sucesso!', 'success');
-                } catch (error) {
-                    console.error('❌ Erro ao excluir lançamento:', error);
-                    mostrarMensagem('❌ Erro ao excluir lançamento', 'danger');
-                }
-            }
-        }
-
-        // Funções auxiliares para loading
-        function mostrarLoading(tipo) {
-            document.getElementById(`${tipo}-text`).style.display = 'none';
-            document.getElementById(`${tipo}-loading`).style.display = 'inline-block';
-        }
-
-        function esconderLoading(tipo) {
-            document.getElementById(`${tipo}-text`).style.display = 'inline';
-            document.getElementById(`${tipo}-loading`).style.display = 'none';
-        }
-
-        // Formulário de movimentação
-        document.getElementById('form-movimentacao').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const placaId = document.getElementById('placa-select').value;
-            const tipo = document.getElementById('tipo-movimentacao').value;
-            const quantidade = parseInt(document.getElementById('quantidade-mov').value);
-            const responsavel = document.getElementById('responsavel').value;
-            const finalidade = document.getElementById('finalidade').value;
-            let data = document.getElementById('data-movimentacao').value;
-            
-            if (!data) data = obterDataAtual();
-            if (!placaId) {
-                mostrarMensagem('❌ Selecione uma placa!', 'danger');
-                return;
-            }
-            if (!finalidade) {
-                mostrarMensagem('❌ Selecione a finalidade!', 'danger');
-                return;
-            }
-            
-            const placa = placas.find(p => p.id == placaId);
-            if (!placa) {
-                mostrarMensagem('❌ Placa não encontrada!', 'danger');
-                return;
-            }
-            
-            if (tipo === 'saida' && quantidade > placa.quantidade) {
-                mostrarMensagem('❌ Quantidade de saída maior que o estoque disponível!', 'danger');
-                return;
-            }
-            
-            try {
-                mostrarLoading('btn-movimentacao');
-                
-                // 1. ATUALIZAR SALDO
-                const saldoAtualizado = await atualizarSaldoPlaca(placaId, tipo, quantidade);
-                
-                if (saldoAtualizado) {
-                    // 2. SALVAR NO HISTÓRICO
-                    const dadosHistorico = {
-                        data: data,
-                        tipo: tipo,
-                        codigo: placa.codigo,
-                        descricao: placa.descricao,
-                        quantidade: quantidade,
-                        responsavel: responsavel,
-                        finalidade: finalidade
-                    };
-                    
-                    await salvarNoHistorico(dadosHistorico);
-                    
-                    // 3. ATUALIZAR INTERFACE
-                    await carregarDados();
-                    
-                    document.getElementById('form-movimentacao').reset();
-                    document.getElementById('data-movimentacao').value = obterDataAtual();
-                    mostrarMensagem('✅ Movimentação registrada com sucesso!', 'success');
-                }
-            } catch (error) {
-                console.error('❌ Erro:', error);
-                mostrarMensagem('❌ Erro ao registrar movimentação', 'danger');
-            } finally {
-                esconderLoading('btn-movimentacao');
-            }
-        });
-
-        // Formulário de placa
-        document.getElementById('form-placa').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const placaData = {
-                codigo: document.getElementById('codigo').value,
-                descricao: document.getElementById('descricao').value,
-                quantidade: parseInt(document.getElementById('quantidade').value),
-                localizacao: document.getElementById('localizacao').value,
-                observacoes: document.getElementById('observacoes').value
-            };
-            
-            const id = document.getElementById('placa-id').value;
-            if (id) placaData.id = id;
-            
-            const sucesso = await salvarPlaca(placaData);
-            if (sucesso) {
-                document.getElementById('form-placa').reset();
-                mostrarMensagem('✅ Placa salva com sucesso!', 'success');
-                document.querySelector('.nav-link[data-section="estoque"]').click();
-                await carregarDados();
-            }
-        });
-
-        // Funções de navegação
-        document.querySelectorAll('.nav-link').forEach(link => {
-            link.addEventListener('click', function(e) {
-                e.preventDefault();
-                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-                this.classList.add('active');
-                const sectionId = this.getAttribute('data-section');
-                document.querySelectorAll('.page-section').forEach(section => {
-                    section.classList.remove('active-section');
-                });
-                document.getElementById(sectionId).classList.add('active-section');
-            });
-        });
-
-        function abrirCadastroPlaca() {
-            document.querySelector('.nav-link[data-section="cadastro-placa"]').click();
-            document.getElementById('form-placa').reset();
-            document.getElementById('placa-id').value = '';
-        }
-
-        function cancelarCadastroPlaca() {
-            document.querySelector('.nav-link[data-section="estoque"]').click();
-        }
-
-        function cancelarMovimentacao() {
-            document.getElementById('form-movimentacao').reset();
-            document.getElementById('data-movimentacao').value = obterDataAtual();
-        }
-
-        // Atualizar tabela de estoque
-        function atualizarTabelaEstoque() {
-            const tabela = document.getElementById('tabela-estoque');
-            if (placas.length === 0) {
-                tabela.innerHTML = '<tr><td colspan="6" class="text-center">Nenhuma placa cadastrada</td></tr>';
-                return;
-            }
-            
-            tabela.innerHTML = '';
-            placas.forEach(placa => {
-                const tr = document.createElement('tr');
-                tr.className = placa.quantidade === 0 ? 'out-of-stock' : (placa.quantidade <= LIMITE_ESTOQUE_BAIXO ? 'low-stock' : '');
-                
-                let status = placa.quantidade === 0 ? 
-                    '<span class="badge bg-danger">Sem Estoque</span>' : 
-                    placa.quantidade <= LIMITE_ESTOQUE_BAIXO ? 
-                    '<span class="badge bg-warning">Estoque Baixo</span>' : 
-                    '<span class="badge bg-success">Normal</span>';
-                
-                tr.innerHTML = `
-                    <td>${placa.codigo}</td>
-                    <td>${placa.descricao}</td>
-                    <td>${placa.quantidade}</td>
-                    <td>${placa.localizacao || '-'}</td>
-                    <td>${status}</td>
-                    <td class="action-buttons">
-                        <button class="btn btn-sm btn-outline-danger" onclick="excluirPlaca('${placa.id}')">
-                            <i class="bi bi-trash"></i> Excluir
-                        </button>
-                    </td>
-                `;
-                tabela.appendChild(tr);
-            });
+            }).join('');
         }
 
         // Atualizar dashboard
         function atualizarDashboard() {
-            const totalPlacas = placas.reduce((total, placa) => total + placa.quantidade, 0);
+            // Totais
+            const totalPlacas = placas.reduce((sum, placa) => sum + placa.quantidade, 0);
             const tiposPlacas = placas.length;
             const baixoEstoque = placas.filter(p => p.quantidade > 0 && p.quantidade <= LIMITE_ESTOQUE_BAIXO).length;
             const semEstoque = placas.filter(p => p.quantidade === 0).length;
@@ -1339,22 +1251,55 @@
             document.getElementById('baixo-estoque').textContent = baixoEstoque;
             document.getElementById('sem-estoque').textContent = semEstoque;
             
+            // Atualizar alertas
+            const alertasContainer = document.getElementById('alertas-estoque');
+            const alertas = [];
+            
+            if (semEstoque > 0) {
+                alertas.push(`
+                    <div class="alert alert-danger d-flex align-items-center">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <div>${semEstoque} tipo(s) de placa sem estoque</div>
+                    </div>
+                `);
+            }
+            
+            if (baixoEstoque > 0) {
+                alertas.push(`
+                    <div class="alert alert-warning d-flex align-items-center">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <div>${baixoEstoque} tipo(s) de placa com estoque baixo</div>
+                    </div>
+                `);
+            }
+            
+            if (alertas.length === 0) {
+                alertas.push(`
+                    <div class="alert alert-success d-flex align-items-center">
+                        <i class="bi bi-check-circle-fill me-2"></i>
+                        <div>Estoque em condições normais</div>
+                    </div>
+                `);
+            }
+            
+            alertasContainer.innerHTML = alertas.join('');
+            
+            // Atualizar gráfico
             atualizarGraficoEstoque();
-            atualizarAlertasEstoque();
         }
 
-        // Atualizar gráfico
+        // Atualizar gráfico de estoque
         function atualizarGraficoEstoque() {
             const ctx = document.getElementById('estoqueChart').getContext('2d');
             const tipoGrafico = document.getElementById('tipo-grafico').value;
             
+            // Destruir gráfico anterior se existir
             if (window.estoqueChartInstance) {
                 window.estoqueChartInstance.destroy();
             }
             
             const labels = placas.map(p => p.codigo);
-            const data = placas.map(p => p.quantidade);
-            const cores = placas.map(p => p.quantidade === 0 ? '#dc3545' : p.quantidade <= LIMITE_ESTOQUE_BAIXO ? '#ffc107' : '#00ff88');
+            const dados = placas.map(p => p.quantidade);
             
             window.estoqueChartInstance = new Chart(ctx, {
                 type: tipoGrafico,
@@ -1362,8 +1307,11 @@
                     labels: labels,
                     datasets: [{
                         label: 'Quantidade em Estoque',
-                        data: data,
-                        backgroundColor: cores,
+                        data: dados,
+                        backgroundColor: dados.map(q => 
+                            q === 0 ? '#dc3545' : 
+                            q <= LIMITE_ESTOQUE_BAIXO ? '#ffc107' : '#00ff88'
+                        ),
                         borderColor: '#333',
                         borderWidth: 1
                     }]
@@ -1372,46 +1320,37 @@
                     responsive: true,
                     plugins: {
                         legend: {
-                            labels: { color: '#f8f9fa' }
+                            position: 'top',
+                            labels: {
+                                color: '#f8f9fa'
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Estoque de Placas Eletrônicas',
+                            color: '#f8f9fa'
                         }
                     },
                     scales: tipoGrafico === 'bar' || tipoGrafico === 'line' ? {
-                        y: { 
+                        y: {
                             beginAtZero: true,
-                            ticks: { color: '#f8f9fa' },
-                            grid: { color: 'rgba(255,255,255,0.1)' }
+                            ticks: {
+                                color: '#adb5bd'
+                            },
+                            grid: {
+                                color: '#333'
+                            }
                         },
                         x: {
-                            ticks: { color: '#f8f9fa' },
-                            grid: { color: 'rgba(255,255,255,0.1)' }
+                            ticks: {
+                                color: '#adb5bd'
+                            },
+                            grid: {
+                                color: '#333'
+                            }
                         }
                     } : {}
                 }
-            });
-        }
-
-        // Atualizar alertas
-        function atualizarAlertasEstoque() {
-            const container = document.getElementById('alertas-estoque');
-            const baixoEstoque = placas.filter(p => p.quantidade > 0 && p.quantidade <= LIMITE_ESTOQUE_BAIXO);
-            const semEstoque = placas.filter(p => p.quantidade === 0);
-            
-            if (baixoEstoque.length === 0 && semEstoque.length === 0) {
-                container.innerHTML = '<div class="alert alert-success">Estoque em situação normal</div>';
-                return;
-            }
-            
-            container.innerHTML = '';
-            baixoEstoque.forEach(placa => {
-                container.innerHTML += `<div class="alert alert-warning">
-                    <strong>${placa.codigo}</strong> - ${placa.descricao}: Estoque baixo (${placa.quantidade} unidades)
-                </div>`;
-            });
-            
-            semEstoque.forEach(placa => {
-                container.innerHTML += `<div class="alert alert-danger">
-                    <strong>${placa.codigo}</strong> - ${placa.descricao}: Sem estoque
-                </div>`;
             });
         }
 
@@ -1419,6 +1358,7 @@
         function atualizarSelectPlacas() {
             const select = document.getElementById('placa-select');
             select.innerHTML = '<option value="">Selecione uma placa</option>';
+            
             placas.forEach(placa => {
                 const option = document.createElement('option');
                 option.value = placa.id;
@@ -1427,15 +1367,397 @@
             });
         }
 
-        // Inicialização
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('data-movimentacao').value = obterDataAtual();
-            carregarDados();
+        // Atualizar tabela de histórico
+        function atualizarTabelaHistorico() {
+            const tbody = document.getElementById('tabela-historico-completo');
+            const totalElement = document.getElementById('total-registros-historico');
             
-            document.getElementById('tipo-grafico').addEventListener('change', function() {
-                atualizarGraficoEstoque();
+            totalElement.textContent = `${historicoLancamentos.length} registros`;
+            
+            if (historicoLancamentos.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center">Nenhum lançamento registrado</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = historicoLancamentos.map(lancamento => {
+                const tipoBadge = lancamento.tipo === 'entrada' ? 
+                    '<span class="badge entrada-badge">Entrada</span>' : 
+                    '<span class="badge saida-badge">Saída</span>';
+                
+                const finalidadeTexto = FINALIDADES[lancamento.finalidade] || lancamento.finalidade;
+                
+                return `
+                    <tr>
+                        <td>${lancamento.data}</td>
+                        <td>${tipoBadge}</td>
+                        <td>${lancamento.codigo} - ${lancamento.descricao}</td>
+                        <td>${lancamento.quantidade}</td>
+                        <td>${lancamento.responsavel}</td>
+                        <td>${finalidadeTexto}</td>
+                        <td class="action-buttons">
+                            <button class="btn btn-sm btn-outline-primary" onclick="editarLancamento('${lancamento.id}')">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="excluirLancamento('${lancamento.id}')">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // ========== FUNÇÕES DE FORMULÁRIOS ==========
+
+        // Abrir cadastro de placa
+        function abrirCadastroPlaca() {
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            document.querySelector('.nav-link[data-section="cadastro-placa"]').classList.add('active');
+            document.querySelectorAll('.page-section').forEach(section => {
+                section.classList.remove('active-section');
             });
-        });
+            document.getElementById('cadastro-placa').classList.add('active-section');
+            
+            // Limpar formulário
+            document.getElementById('form-placa').reset();
+            document.getElementById('placa-id').value = '';
+            document.getElementById('titulo-cadastro-placa').textContent = 'Cadastrar Nova Placa';
+        }
+
+        // Cancelar cadastro de placa
+        function cancelarCadastroPlaca() {
+            irParaEstoque();
+        }
+
+        // Salvar placa (nova ou edição)
+        async function salvarPlaca(event) {
+            event.preventDefault();
+            
+            const id = document.getElementById('placa-id').value;
+            const codigo = document.getElementById('codigo').value.trim();
+            const descricao = document.getElementById('descricao').value.trim();
+            const quantidade = parseInt(document.getElementById('quantidade').value);
+            const localizacao = document.getElementById('localizacao').value.trim();
+            const observacoes = document.getElementById('observacoes').value.trim();
+            
+            // Validações
+            if (!codigo || !descricao || isNaN(quantidade) || quantidade < 0) {
+                mostrarMensagem('❌ Preencha todos os campos obrigatórios corretamente', 'danger');
+                return;
+            }
+            
+            // Verificar se código já existe (em edição, ignorar a própria placa)
+            const codigoExistente = placas.find(p => 
+                p.codigo.toLowerCase() === codigo.toLowerCase() && p.id != id
+            );
+            
+            if (codigoExistente) {
+                mostrarMensagem('❌ Já existe uma placa com este código', 'danger');
+                return;
+            }
+            
+            const placaData = {
+                codigo,
+                descricao,
+                quantidade,
+                localizacao,
+                observacoes
+            };
+            
+            // Mostrar loading
+            document.getElementById('btn-placa-text').style.display = 'none';
+            document.getElementById('btn-placa-loading').style.display = 'inline-block';
+            
+            try {
+                let resultado;
+                if (usandoSupabase) {
+                    if (id) {
+                        placaData.id = parseInt(id);
+                        resultado = await salvarPlacaSupabase(placaData);
+                    } else {
+                        resultado = await salvarPlacaSupabase(placaData);
+                    }
+                } else {
+                    // Salvar no localStorage
+                    if (id) {
+                        const index = placas.findIndex(p => p.id === id);
+                        if (index !== -1) {
+                            placas[index] = { ...placas[index], ...placaData };
+                        }
+                    } else {
+                        placaData.id = Date.now().toString();
+                        placas.unshift(placaData);
+                    }
+                    salvarNoLocalStorage(STORAGE_KEYS.PLACAS, placas);
+                }
+                
+                mostrarMensagem('✅ Placa salva com sucesso!', 'success');
+                await carregarDados();
+                irParaEstoque();
+                
+            } catch (error) {
+                console.error('❌ Erro ao salvar placa:', error);
+                mostrarMensagem('❌ Erro ao salvar placa', 'danger');
+            } finally {
+                // Restaurar botão
+                document.getElementById('btn-placa-text').style.display = 'inline';
+                document.getElementById('btn-placa-loading').style.display = 'none';
+            }
+        }
+
+        // Editar placa
+        function editarPlaca(id) {
+            const placa = placas.find(p => p.id == id);
+            if (!placa) return;
+            
+            abrirCadastroPlaca();
+            document.getElementById('titulo-cadastro-placa').textContent = 'Editar Placa';
+            
+            document.getElementById('placa-id').value = placa.id;
+            document.getElementById('codigo').value = placa.codigo;
+            document.getElementById('descricao').value = placa.descricao;
+            document.getElementById('quantidade').value = placa.quantidade;
+            document.getElementById('localizacao').value = placa.localizacao || '';
+            document.getElementById('observacoes').value = placa.observacoes || '';
+        }
+
+        // Excluir placa
+        async function excluirPlaca(id) {
+            if (!confirm('Tem certeza que deseja excluir esta placa?')) return;
+            
+            try {
+                if (usandoSupabase) {
+                    await excluirPlacaSupabase(parseInt(id));
+                } else {
+                    placas = placas.filter(p => p.id !== id);
+                    salvarNoLocalStorage(STORAGE_KEYS.PLACAS, placas);
+                }
+                
+                mostrarMensagem('✅ Placa excluída com sucesso!', 'success');
+                await carregarDados();
+                
+            } catch (error) {
+                console.error('❌ Erro ao excluir placa:', error);
+                mostrarMensagem('❌ Erro ao excluir placa', 'danger');
+            }
+        }
+
+        // Cancelar movimentação
+        function cancelarMovimentacao() {
+            document.getElementById('form-movimentacao').reset();
+            document.getElementById('data-movimentacao').value = obterDataAtual();
+        }
+
+        // Registrar movimentação
+        async function registrarMovimentacao(event) {
+            event.preventDefault();
+            
+            const placaId = document.getElementById('placa-select').value;
+            const tipo = document.getElementById('tipo-movimentacao').value;
+            const quantidade = parseInt(document.getElementById('quantidade-mov').value);
+            const responsavel = document.getElementById('responsavel').value.trim();
+            const finalidade = document.getElementById('finalidade').value;
+            const dataMovimentacao = document.getElementById('data-movimentacao').value || obterDataAtual();
+            
+            // Validações
+            if (!placaId || !responsavel || !finalidade || isNaN(quantidade) || quantidade <= 0) {
+                mostrarMensagem('❌ Preencha todos os campos obrigatórios corretamente', 'danger');
+                return;
+            }
+            
+            const placa = placas.find(p => p.id == placaId);
+            if (!placa) {
+                mostrarMensagem('❌ Placa não encontrada', 'danger');
+                return;
+            }
+            
+            // Validar estoque para saída
+            if (tipo === 'saida' && placa.quantidade < quantidade) {
+                mostrarMensagem(`❌ Estoque insuficiente. Disponível: ${placa.quantidade}`, 'danger');
+                return;
+            }
+            
+            // Mostrar loading
+            document.getElementById('btn-movimentacao-text').style.display = 'none';
+            document.getElementById('btn-movimentacao-loading').style.display = 'inline-block';
+            
+            try {
+                // Calcular nova quantidade
+                const novaQuantidade = tipo === 'entrada' ? 
+                    placa.quantidade + quantidade : 
+                    placa.quantidade - quantidade;
+                
+                // Salvar movimentação
+                const dadosMovimentacao = {
+                    data: dataMovimentacao,
+                    tipo,
+                    codigo: placa.codigo,
+                    descricao: placa.descricao,
+                    quantidade,
+                    responsavel,
+                    finalidade
+                };
+                
+                if (usandoSupabase) {
+                    await salvarMovimentacaoSupabase(dadosMovimentacao);
+                    await atualizarSaldoPlacaSupabase(parseInt(placaId), novaQuantidade);
+                } else {
+                    // Salvar no localStorage
+                    dadosMovimentacao.id = Date.now().toString();
+                    historicoLancamentos.unshift(dadosMovimentacao);
+                    salvarNoLocalStorage(STORAGE_KEYS.HISTORICO, historicoLancamentos);
+                    
+                    // Atualizar quantidade da placa
+                    placa.quantidade = novaQuantidade;
+                    salvarNoLocalStorage(STORAGE_KEYS.PLACAS, placas);
+                }
+                
+                mostrarMensagem(`✅ ${tipo === 'entrada' ? 'Entrada' : 'Saída'} registrada com sucesso!`, 'success');
+                document.getElementById('form-movimentacao').reset();
+                document.getElementById('data-movimentacao').value = obterDataAtual();
+                
+                await carregarDados();
+                
+            } catch (error) {
+                console.error('❌ Erro ao registrar movimentação:', error);
+                mostrarMensagem('❌ Erro ao registrar movimentação', 'danger');
+            } finally {
+                // Restaurar botão
+                document.getElementById('btn-movimentacao-text').style.display = 'inline';
+                document.getElementById('btn-movimentacao-loading').style.display = 'none';
+            }
+        }
+
+        // Editar lançamento
+        async function editarLancamento(id) {
+            const lancamento = historicoLancamentos.find(l => l.id == id);
+            if (!lancamento) return;
+            
+            document.getElementById('editar-lancamento-id').value = lancamento.id;
+            document.getElementById('editar-quantidade').value = lancamento.quantidade;
+            document.getElementById('editar-responsavel').value = lancamento.responsavel;
+            document.getElementById('editar-finalidade').value = lancamento.finalidade;
+            document.getElementById('editar-data').value = lancamento.data;
+            
+            const modal = new bootstrap.Modal(document.getElementById('modalEditarLancamento'));
+            modal.show();
+        }
+
+        // Salvar edição do lançamento
+        async function salvarEdicaoLancamento() {
+            const id = document.getElementById('editar-lancamento-id').value;
+            const quantidade = parseInt(document.getElementById('editar-quantidade').value);
+            const responsavel = document.getElementById('editar-responsavel').value.trim();
+            const finalidade = document.getElementById('editar-finalidade').value;
+            const data = document.getElementById('editar-data').value;
+            
+            // Validações
+            if (!responsavel || !finalidade || isNaN(quantidade) || quantidade <= 0 || !data) {
+                mostrarMensagem('❌ Preencha todos os campos corretamente', 'danger');
+                return;
+            }
+            
+            // Mostrar loading
+            document.getElementById('btn-salvar-text').style.display = 'none';
+            document.getElementById('btn-salvar-loading').style.display = 'inline-block';
+            
+            try {
+                if (usandoSupabase) {
+                    const { error } = await supabase
+                        .from('historico_lancamentos')
+                        .update({
+                            quantidade,
+                            responsavel,
+                            finalidade,
+                            data
+                        })
+                        .eq('id', parseInt(id));
+                    
+                    if (error) throw error;
+                } else {
+                    // Atualizar no localStorage
+                    const index = historicoLancamentos.findIndex(l => l.id === id);
+                    if (index !== -1) {
+                        historicoLancamentos[index] = {
+                            ...historicoLancamentos[index],
+                            quantidade,
+                            responsavel,
+                            finalidade,
+                            data
+                        };
+                        salvarNoLocalStorage(STORAGE_KEYS.HISTORICO, historicoLancamentos);
+                    }
+                }
+                
+                mostrarMensagem('✅ Lançamento atualizado com sucesso!', 'success');
+                
+                const modal = bootstrap.Modal.getInstance(document.getElementById('modalEditarLancamento'));
+                modal.hide();
+                
+                await carregarDados();
+                
+            } catch (error) {
+                console.error('❌ Erro ao atualizar lançamento:', error);
+                mostrarMensagem('❌ Erro ao atualizar lançamento', 'danger');
+            } finally {
+                // Restaurar botão
+                document.getElementById('btn-salvar-text').style.display = 'inline';
+                document.getElementById('btn-salvar-loading').style.display = 'none';
+            }
+        }
+
+        // Excluir lançamento
+        async function excluirLancamento(id) {
+            if (!confirm('Tem certeza que deseja excluir este lançamento?')) return;
+            
+            try {
+                if (usandoSupabase) {
+                    await excluirLancamentoSupabase(parseInt(id));
+                } else {
+                    historicoLancamentos = historicoLancamentos.filter(l => l.id !== id);
+                    salvarNoLocalStorage(STORAGE_KEYS.HISTORICO, historicoLancamentos);
+                }
+                
+                mostrarMensagem('✅ Lançamento excluído com sucesso!', 'success');
+                await carregarDados();
+                
+            } catch (error) {
+                console.error('❌ Erro ao excluir lançamento:', error);
+                mostrarMensagem('❌ Erro ao excluir lançamento', 'danger');
+            }
+        }
+
+        // Função de exportação para Excel
+        function exportarParaExcel() {
+            try {
+                // Preparar dados para exportação
+                const dadosExportacao = placas.map(placa => ({
+                    'Código': placa.codigo,
+                    'Descrição': placa.descricao,
+                    'Quantidade': placa.quantidade,
+                    'Localização': placa.localizacao || '',
+                    'Observações': placa.observacoes || '',
+                    'Status': placa.quantidade === 0 ? 'Sem Estoque' : 
+                             placa.quantidade <= LIMITE_ESTOQUE_BAIXO ? 'Baixo Estoque' : 'Em Estoque'
+                }));
+
+                // Criar planilha
+                const ws = XLSX.utils.json_to_sheet(dadosExportacao);
+                
+                // Criar workbook
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Estoque de Placas");
+                
+                // Gerar arquivo e fazer download
+                const nomeArquivo = `estoque_placas_${obterDataAtual()}.xlsx`;
+                XLSX.writeFile(wb, nomeArquivo);
+                
+                mostrarMensagem('✅ Planilha exportada com sucesso!', 'success');
+            } catch (error) {
+                console.error('❌ Erro ao exportar para Excel:', error);
+                mostrarMensagem('❌ Erro ao exportar planilha', 'danger');
+            }
+        }
     </script>
 </body>
 </html>
